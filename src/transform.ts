@@ -58,6 +58,7 @@ class ImageBlock {
       const imgText = await this.getImage();
 
       if (!imgText.ok) {
+        console.error(yield imgText.text());
         throw new Error("Unable to get image text from kroki")
       } else {
         const svg = await imgText.text();
