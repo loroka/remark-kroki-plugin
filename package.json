@@ -4,12 +4,10 @@
   "description": "Generate images from text using the kroki web service",
   "repository": "https://github.com/atooni/remark-kroki-plugin.git",
   "license": "Apache 2.0",
-  "files": [
-    "dist/**/*"
-  ],
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
+    "prepare": "npm run build",
     "build": "tsc",
     "test": "jest --verbose --coverage"
   },
