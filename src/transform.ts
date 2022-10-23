@@ -92,14 +92,20 @@ export function extractParam(name: string, input: string): OptionString {
 
 const applyCodeBlock = (options: KrokiOptions, node: any) => {
   const { lang, meta, value } = node;
+  let supportedLangs: string[] = [
+    "plantuml", "blockdiag", "bpmn", "bytefield", "seqdiag", "actdiag",
+    "nwdiag", "packetdiag", "rackdiag", "c4plantuml", "ditaa", "erd",
+    "excalidraw", "graphviz", "mermaid", "nomnoml", "pikchr", "structurizr",
+    "svgbob", "vega", "vegalite", "wavedrom"];
 
   let kb = undefined
+  let isSupportedLang = supportedLangs.indexOf(lang) !== -1;
 
-  if (lang === options.lang) {
+  if (lang === options.lang || isSupportedLang) {
 
     const imgAlt = extractParam("imgAlt", meta);
     const imgTitle = extractParam("imgTitle", meta);
-    const imgType = get(extractParam("imgType", meta));
+    const imgType = isSupportedLang ? lang : get(extractParam("imgType", meta));
 
     kb = new ImageBlock(
       node,
@@ -118,9 +124,9 @@ export const transform = (options: KrokiOptions) => (tree: any) => new Promise<v
 
   const nodesToChange: ImageBlock[] = [];
 
-  // First, collect all the node that need to be changed, so that 
-  // we can iterate over them later on and fetch the file contents 
-  // asynchronously 
+  // First, collect all the node that need to be changed, so that
+  // we can iterate over them later on and fetch the file contents
+  // asynchronously
   const visitor = (node: any) => {
 
     const kb = applyCodeBlock(options, node);
@@ -132,7 +138,7 @@ export const transform = (options: KrokiOptions) => (tree: any) => new Promise<v
 
   visit(tree, 'code', visitor);
 
-  // Now go over the collected nodes and change them 
+  // Now go over the collected nodes and change them
   for (const kb of nodesToChange) {
     await kb.createNode()
   }
