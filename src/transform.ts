@@ -2,6 +2,7 @@ import { Md5 } from 'ts-md5/dist/md5';
 import visit from 'unist-util-visit';
 import fetch from 'node-fetch';
 import fs from 'fs';
+import { LoadContext } from '@docusaurus/types';
 
 type OptionString = string | undefined;
 
@@ -121,9 +122,11 @@ const applyCodeBlock = (options: KrokiOptions, node: any) => {
   return kb;
 }
 
-export const transform = (options: KrokiOptions) => (tree: any) => new Promise<void>(async (resolve) => {
+export const transform = (context: LoadContext, options: KrokiOptions) => (tree: any) => new Promise<void>(async (resolve) => {
 
   const nodesToChange: ImageBlock[] = [];
+  console.log("---> Context:" + context);
+  console.log("---> Options:" + options);
 
   // First, collect all the node that need to be changed, so that
   // we can iterate over them later on and fetch the file contents
