@@ -2,6 +2,8 @@ import { Md5 } from 'ts-md5/dist/md5';
 import visit from 'unist-util-visit';
 import fetch from 'node-fetch';
 import fs from 'fs';
+import { LoadContext } from '@docusaurus/types';
+import path = require('path');
 
 type OptionString = string | undefined;
 
@@ -27,7 +29,8 @@ class ImageBlock {
     readonly imgType: string,
     readonly imgAlt: OptionString,
     readonly imgTitle: OptionString,
-    readonly imageCode: string
+    readonly imageCode: string,
+    readonly relPath: string
   ) { }
 
   private md5 = Md5.hashStr(this.imageCode);
@@ -58,8 +61,8 @@ class ImageBlock {
       const imgText = await this.getImage();
 
       if (!imgText.ok) {
-        console.error(await imgText.text());
-        throw new Error("Unable to get image text from kroki")
+        let reason = await imgText.text();
+        throw new Error("Unable to get image text from kroki, reson: " + reason);
       } else {
         const svg = await imgText.text();
         fs.writeFileSync(this.imgFile, svg, "utf-8");
@@ -68,7 +71,7 @@ class ImageBlock {
 
     const imgNode: any = {
       type: "image",
-      url: this.options.imgRefDir + "/" + this.md5 + ".svg",
+      url: this.relPath + "/" + this.options.imgRefDir + "/" + this.md5 + ".svg",
       title: this.imgTitle,
       alt: this.imgAlt === undefined ? this.md5 : this.imgAlt
     }
@@ -91,7 +94,7 @@ export function extractParam(name: string, input: string): OptionString {
   return result;
 }
 
-const applyCodeBlock = (options: KrokiOptions, node: any) => {
+const applyCodeBlock = (options: KrokiOptions, node: any, relPath: string) => {
   const { lang, meta, value } = node;
   let supportedLangs: string[] = [
     "plantuml", "blockdiag", "bpmn", "bytefield", "seqdiag", "actdiag",
@@ -114,23 +117,25 @@ const applyCodeBlock = (options: KrokiOptions, node: any) => {
       imgType,
       imgAlt,
       imgTitle,
-      value
+      value,
+      relPath
     )
   }
 
   return kb;
 }
 
-export const transform = (options: KrokiOptions) => (tree: any) => new Promise<void>(async (resolve) => {
+export const transform = (options: KrokiOptions) => (tree: any, vfile: any) => new Promise<void>(async (resolve) => {
 
   const nodesToChange: ImageBlock[] = [];
+  let relPath = path.relative(path.dirname(vfile.history[0]), vfile.cwd);
 
   // First, collect all the node that need to be changed, so that
   // we can iterate over them later on and fetch the file contents
   // asynchronously
   const visitor = (node: any) => {
 
-    const kb = applyCodeBlock(options, node);
+    const kb = applyCodeBlock(options, node, relPath);
 
     if (kb !== undefined) {
       nodesToChange.push(kb)
